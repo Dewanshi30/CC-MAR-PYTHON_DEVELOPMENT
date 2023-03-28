@@ -1,160 +1,170 @@
-def accept(n):
-    puz = []
-    for i in range(n):
-        puz.append([val for val in input().split()])
-    return puz
+import tkinter as tk
+
+LARGE_FONT_STYLE = ("Arial", 40, "bold")
+SMALL_FONT_STYLE = ("Arial", 16)
+DIGITS_FONT_STYLE = ("Arial", 24, "bold")
+DEFAULT_FONT_STYLE = ("Arial", 20)
+
+OFF_WHITE = "#000000"
+WHITE = "#000000"
+LIGHT_BLUE = "#000000"
+LIGHT_GRAY = "#000000"
+LABEL_COLOR = "#FFFFFF"
+EQU_COLOR="#ae6433"
+NO_COLOR="#1a1a1a"
+OPERATOR_COLOR="#323232"
 
 
-def print_board(board, n):
-    for i in range(n):
-        print()
-        for j in range(n):
-            print(board[i][j], end=' ')
+class Calculator:
+    def __init__(self):
+        self.window = tk.Tk()
+        self.window.geometry("375x667")
+        self.window.resizable(0, 0)
+        self.window.title("Calculator")
+
+        self.total_expression = ""
+        self.current_expression = ""
+        self.display_frame = self.create_display_frame()
+
+        self.total_label, self.label = self.create_display_labels()
+
+        self.digits = {
+            7: (1, 1), 8: (1, 2), 9: (1, 3),
+            4: (2, 1), 5: (2, 2), 6: (2, 3),
+            1: (3, 1), 2: (3, 2), 3: (3, 3),
+            0: (4, 2), '.': (4, 1)
+        }
+        self.operations = {"/": "\u00F7", "*": "\u00D7", "-": "-", "+": "+"}
+        self.buttons_frame = self.create_buttons_frame()
+
+        self.buttons_frame.rowconfigure(0, weight=1)
+        for x in range(1, 5):
+            self.buttons_frame.rowconfigure(x, weight=1)
+            self.buttons_frame.columnconfigure(x, weight=1)
+        self.create_digit_buttons()
+        self.create_operator_buttons()
+        self.create_special_buttons()
+        self.bind_keys()
+
+    def bind_keys(self):
+        self.window.bind("<Return>", lambda event: self.evaluate())
+        for key in self.digits:
+            self.window.bind(str(key), lambda event, digit=key: self.add_to_expression(digit))
+
+        for key in self.operations:
+            self.window.bind(key, lambda event, operator=key: self.append_operator(operator))
+
+    def create_special_buttons(self):
+        self.create_clear_button()
+        self.create_equals_button()
+        self.create_square_button()
+        self.create_sqrt_button()
+
+    def create_display_labels(self):
+        total_label = tk.Label(self.display_frame, text=self.total_expression, anchor=tk.E, bg=LIGHT_GRAY,
+                               fg=LABEL_COLOR, padx=24, font=SMALL_FONT_STYLE)
+        total_label.pack(expand=True, fill='both')
+
+        label = tk.Label(self.display_frame, text=self.current_expression, anchor=tk.E, bg=LIGHT_GRAY,
+                         fg=LABEL_COLOR, padx=24, font=LARGE_FONT_STYLE)
+        label.pack(expand=True, fill='both')
+
+        return total_label, label
+
+    def create_display_frame(self):
+        frame = tk.Frame(self.window, height=221, bg=LIGHT_GRAY)
+        frame.pack(expand=True, fill="both")
+        return frame
+
+    def add_to_expression(self, value):
+        self.current_expression += str(value)
+        self.update_label()
+
+    def create_digit_buttons(self):
+        for digit, grid_value in self.digits.items():
+            button = tk.Button(self.buttons_frame, text=str(digit), bg=NO_COLOR, fg=LABEL_COLOR, font=DIGITS_FONT_STYLE,
+                               borderwidth=0, command=lambda x=digit: self.add_to_expression(x))
+            button.grid(row=grid_value[0], column=grid_value[1], sticky=tk.NSEW)
+
+    def append_operator(self, operator):
+        self.current_expression += operator
+        self.total_expression += self.current_expression
+        self.current_expression = ""
+        self.update_total_label()
+        self.update_label()
+
+    def create_operator_buttons(self):
+        i = 0
+        for operator, symbol in self.operations.items():
+            button = tk.Button(self.buttons_frame, text=symbol, bg=OPERATOR_COLOR, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                               borderwidth=0, command=lambda x=operator: self.append_operator(x))
+            button.grid(row=i, column=4, sticky=tk.NSEW)
+            i += 1
+
+    def clear(self):
+        self.current_expression = ""
+        self.total_expression = ""
+        self.update_label()
+        self.update_total_label()
+
+    def create_clear_button(self):
+        button = tk.Button(self.buttons_frame, text="C", bg=OPERATOR_COLOR, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=0, command=self.clear)
+        button.grid(row=0, column=1, sticky=tk.NSEW)
+
+    def square(self):
+        self.current_expression = str(eval(f"{self.current_expression}**2"))
+        self.update_label()
+
+    def create_square_button(self):
+        button = tk.Button(self.buttons_frame, text="x\u00b2", bg=OPERATOR_COLOR, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=0, command=self.square)
+        button.grid(row=0, column=2, sticky=tk.NSEW)
+
+    def sqrt(self):
+        self.current_expression = str(eval(f"{self.current_expression}**0.5"))
+        self.update_label()
+
+    def create_sqrt_button(self):
+        button = tk.Button(self.buttons_frame, text="\u221ax", bg=OPERATOR_COLOR, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=0, command=self.sqrt)
+        button.grid(row=0, column=3, sticky=tk.NSEW)
+
+    def evaluate(self):
+        self.total_expression += self.current_expression
+        self.update_total_label()
+        try:
+            self.current_expression = str(eval(self.total_expression))
+
+            self.total_expression = ""
+        except Exception as e:
+            self.current_expression = "Error"
+        finally:
+            self.update_label()
+
+    def create_equals_button(self):
+        button = tk.Button(self.buttons_frame, text="=", bg=EQU_COLOR, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=0, command=self.evaluate)
+        button.grid(row=4, column=3, columnspan=2, sticky=tk.NSEW)
+
+    def create_buttons_frame(self):
+        frame = tk.Frame(self.window)
+        frame.pack(expand=True, fill="both")
+        return frame
+
+    def update_total_label(self):
+        expression = self.total_expression
+        for operator, symbol in self.operations.items():
+            expression = expression.replace(operator, f' {symbol} ')
+        self.total_label.config(text=expression)
+
+    def update_label(self):
+        self.label.config(text=self.current_expression[:11])
+
+    def run(self):
+        self.window.mainloop()
 
 
-# Find the position of blank space
-def find_space(Current, n):
-    for blank_row_pos in range(n):
-        for blank_col_pos in range(n):
-            if Current[blank_row_pos][blank_col_pos] == '_':
-                return blank_row_pos, blank_col_pos
-
-
-# Copy the current node to new node for shuffling the blank space and create a new configuration
-def copy_current(Current):
-    temp = []
-    for i in range(len(Current)):
-        row = []
-        for val in Current[i]:
-            row.append(val)
-
-        temp.append(row)
-
-    return (temp)
-
-
-# Move the blank space in given direction, if out of range return None
-def shuffle(Current, brow_pos, bcol_pos, move_x, move_y):
-    if move_x >= 0 and move_x < len(Current) and move_y >= 0 and move_y < len(Current):
-        temp = []
-        temp = copy_current(Current)
-        change = temp[move_x][move_y]
-        temp[move_x][move_y] = temp[brow_pos][bcol_pos]
-        temp[brow_pos][bcol_pos] = change
-        return temp
-    else:
-        return None
-
-
-# Function to calculate g_score: the number of nodes traversed from a start node to get to the current node
-def g_score(Node):
-    return Node[1]  # Node=[Board,level,fscore]
-
-
-# Function to calculate h_score: the number of misplaced tiles by comparing the current state and the goal state
-def h_score(Current, Goal, n):
-    hscore = 0
-    for i in range(n):
-        for j in range(n):
-            if (Current[i][j] != Goal[i][j]) and (Current[i][j] != '_'):
-                hscore += 1
-
-    return hscore
-
-
-# Function to calculate f_Score= g_score + h_Score
-def f_score(Node, Goal, n):
-    Current = Node[0]
-    return g_score(Node) + h_score(Current, Goal, n)
-
-
-# Generate the child nodes by moving the blank in any four direction (up,down,left,right)
-def move_gen(Node, Goal, n):
-    Current = Node[0]
-    level = Node[1]
-    fscore = 0
-    row, col = find_space(Current, n)
-    move_positions = [[row, col - 1], [row, col + 1], [row - 1, col], [row + 1, col]]  # left,right,up,down
-
-    children = []  # List of child nodes of current node
-
-    for move in move_positions:
-        child = shuffle(Current, row, col, move[0], move[1])
-        if child is not None:
-            cNode = [child, 0, 0]  # Dummy node for calculating f_Score
-            fscore = f_score(cNode, Goal, n)
-
-            Node = [child, level + 1, fscore]
-            children.append(Node)
-    print("\n\n The Children ::", children)
-    return children
-
-
-# Function goal_test to see the goal configuration is reached
-def goal_test(Current, Goal, n):
-    if h_score(Current, Goal, n) == 0:
-        return True
-    else:
-        return False
-
-
-# Function to Sort OPEN based on f_score
-def sort(L):
-    L.sort(key=lambda x: x[2], reverse=False)
-    return L
-
-
-# Function for starting the Game
-def play_game(Start, Goal, n):
-    # when game starts
-    fscore = 0  # fscore initialized to zero
-    gscore = 0  # gscore initialized to zero
-    level = 0  # the start configuration is root node s at level-0 of the state space tree
-
-    Node = [Start, level, fscore]
-    fscore = f_score(Node, Goal, n)
-
-    # Every Node is [board configuration ,level,gscore]
-    Node = [Start, level, fscore]  # current node is Start node
-    print("\nThe Node is=\n", Node)
-    OPEN = []  # OPEN list as frontier
-    CLOSED = []  # CLOSED as explored
-    OPEN.append(Node)
-    levelcount = 0
-
-    # Explored the current node to reach to the Goal configuration
-    while True:
-
-        N = OPEN[0]  # first node of open
-        del OPEN[0]  # delete first node of open
-
-        Current = N[0]  # Extract board configuration
-        print("\n\n The current configuration is ::", Current)
-
-        CLOSED.append(N)
-        # if goal configuration is reached terminate
-        if goal_test(Current, Goal, n) == True:
-            print("\nGoal reached!!")
-            print("CLOSED=", CLOSED)
-            break
-
-        CHILD = move_gen(N, Goal, n)
-        # print("\n\n The CHILD is ::",CHILD)
-        OPEN = []
-        for child in CHILD:
-            OPEN.append(child)
-        # sort the OPEN list based on fscore value of each node
-        sort(OPEN)
-
-    # Drive Code
-
-
-n = int(input("Enter the board size:"))
-
-print("\nEnter Start Configuration of board")
-Start = accept(n)
-
-print("\nEnter Goal Configuration of board")
-Goal = accept(n)
-
-play_game(Start, Goal, n)
+if __name__ == "__main__":
+    calc = Calculator()
+    calc.run()
